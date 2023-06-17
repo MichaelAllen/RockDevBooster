@@ -10,7 +10,7 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Navigation;
 
-using System.Data.SqlLocalDb;
+using MartinCostello.SqlLocalDb;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.ComponentModel;
@@ -32,7 +32,7 @@ namespace com.blueboxmoon.RockDevBooster.Views
         /// <summary>
         /// Identifies the SQL Server Local DB instance that we are running.
         /// </summary>
-        private SqlLocalDbInstance localDb = null;
+        private ISqlLocalDbInstanceInfo localDb = null;
 
         /// <summary>
         /// Template to be used when building the webConnectionString.config file.
@@ -160,20 +160,24 @@ namespace com.blueboxmoon.RockDevBooster.Views
             //
             if ( localDb == null )
             {
-                var provider = new SqlLocalDbProvider();
-                SqlLocalDbInstance instance;
+                var provider = new SqlLocalDbApi();
+                ISqlLocalDbInstanceInfo instance;
 
                 try
                 {
                     //
                     // If we find an existing instance then shut it down and delete it.
                     //
-                    instance = provider.GetInstance( "RockDevBooster" );
-                    if ( instance.IsRunning )
+                    instance = provider.GetInstanceInfo( "RockDevBooster" );
+                    var instanceManager = new SqlLocalDbInstanceManager( instance, provider );
+                    if (instance.Exists )
                     {
-                        instance.Stop();
+                        if ( instance.IsRunning )
+                        {
+                            instanceManager.Stop();
+                        }
+                        provider.DeleteInstance( "RockDevBooster" );
                     }
-                    SqlLocalDbInstance.Delete( instance );
                 }
                 finally
                 {
@@ -181,7 +185,8 @@ namespace com.blueboxmoon.RockDevBooster.Views
                     // Create a new instance and keep a reference to it.
                     //
                     localDb = provider.CreateInstance( "RockDevBooster" );
-                    localDb.Start();
+                    var instanceManager = new SqlLocalDbInstanceManager( localDb, provider );
+                    instanceManager.Start();
                 }
             }
 
@@ -411,7 +416,7 @@ namespace com.blueboxmoon.RockDevBooster.Views
         /// Gets the SQL connection to the running instance.
         /// </summary>
         /// <returns></returns>
-        public System.Data.SqlClient.SqlConnection GetSqlConnection()
+        public Microsoft.Data.SqlClient.SqlConnection GetSqlConnection()
         {
             if ( RunningInstanceName == null )
             {
@@ -463,7 +468,9 @@ namespace com.blueboxmoon.RockDevBooster.Views
             {
                 if ( localDb.IsRunning )
                 {
-                    localDb.Stop();
+                    var provider = new SqlLocalDbApi();
+                    var instanceManager = new SqlLocalDbInstanceManager( localDb, provider );
+                    instanceManager.Stop();
                 }
 
                 localDb = null;
