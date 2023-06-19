@@ -646,7 +646,7 @@ namespace com.blueboxmoon.RockDevBooster.Bootstrap.Objects
                 command.CommandText = @"SELECT [Id],[HasInnerException],[Description]
 FROM [ExceptionLog]
 WHERE [CreatedDateTime] >= @LimitDate
-  AND [Description] LIKE 'Plugin Migration error%'";
+  AND [Description] LIKE '##Plugin Migration error%'";
                 command.Parameters.AddWithValue( "LimitDate", bootstrap.ExecuteStartedDateTime );
 
                 var baseExceptions = GetResultsFromCommand( command );
